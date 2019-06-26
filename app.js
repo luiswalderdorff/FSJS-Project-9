@@ -2,18 +2,47 @@
 
 // load modules
 const express = require('express');
+const app = express();
 const morgan = require('morgan');
+
+const models = require("./models");
+const sequelize = models.sequelize;
+
+const { User, Course } = models;
+
+const { check, validationResult } = require('express-validator/check');
+const bcryptjs = require('bcryptjs');
+const auth = require('basic-auth');
+
+
+// Testing the connection to the database
+sequelize
+  .authenticate()
+  .then(() => {
+    console.log("Connection with the database was made.");
+
+
+    // Syncing the models with the database
+    return sequelize.sync(); 
+  });
+
 
 // variable to enable global error logging
 const enableGlobalErrorLogging = process.env.ENABLE_GLOBAL_ERROR_LOGGING === 'true';
 
-// create the Express app
-const app = express();
-
 // setup morgan which gives us http request logging
 app.use(morgan('dev'));
 
-// TODO setup your api routes here
+// Add Routes
+
+const userRoute = require('./routes/users');
+
+const courseRoute = require('./routes/courses');
+
+app.use("/api/users", userRoute);
+app.use("/api/courses", courseRoute);
+
+
 
 // setup a friendly greeting for the root route
 app.get('/', (req, res) => {
