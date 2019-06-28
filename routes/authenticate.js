@@ -13,29 +13,32 @@ module.exports = (req, res, next) => { // Passing the authenticateUser() custom 
     // Attempt to retrieve the user from the data store
     // by their username (i.e. the user's "key"
     // from the Authorization header).
-    const user = User.findOne({ // User defined above
+    User.findOne({ // User defined above
       where: {
         emailAddress: credentials.name
       }
-    });
+    }).then(user => {
+      // If a user was successfully retrieved from the data store...
+      if (user) {
+        // Use the bcryptjs npm package to compare the user's password (from the Authorization header) to the user's password that was retrieved from the data store.
+        const authenticated = bcryptjs
+          .compareSync(credentials.pass, user.password);
 
-    // If a user was successfully retrieved from the data store...
-    if (user) {
-      // Use the bcryptjs npm package to compare the user's password (from the Authorization header) to the user's password that was retrieved from the data store.
-      const authenticated = bcryptjs
-        .compareSync(credentials.pass, user.password);
-
-      // If the passwords match...
-      if (authenticated) {
-        // Then store the retrieved user object on the request object so any middleware functions that follow this middleware function will have access to the user's information.
-        req.currentUser = user;
+        // If the passwords match...
+        if (authenticated) {
+          // Then store the retrieved user object on the request object so any middleware functions that follow this middleware function will have access to the user's information.
+          req.currentUser = user;
+        } else {
+          // Wrong Password
+          message = `Authentication failure for username: ${user.username}`;
+        }
       } else {
-        message = `Authentication failure for username: ${user.username}`;
+        // Wrong username
+        message = `User not found for username: ${credentials.name}`;
       }
-    } else {
-      message = `User not found for username: ${credentials.name}`;
-    }
+    })    
   } else {
+    // No credentials where entered
     message = 'Auth header not found';
   }
 

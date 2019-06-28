@@ -13,6 +13,9 @@ const { User, Course } = models;
 const { check, validationResult } = require('express-validator/check');
 const bcryptjs = require('bcryptjs');
 const auth = require('basic-auth');
+const bodyParser = require('body-parser')
+
+app.use(bodyParser.json()); // Neede for req.body!!!
 
 
 // Testing the connection to the database
