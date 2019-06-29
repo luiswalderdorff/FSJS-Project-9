@@ -60,6 +60,7 @@ router.get("/:id", (req,res) => { //200
       res.json(course).status(200);
     } else {
       const err = new Error("This course does not exist");
+      res.json({message: "This course doesn't exist"});
       err.status(400);
       next(err);
     }
@@ -68,32 +69,33 @@ router.get("/:id", (req,res) => { //200
 
 router.post("/", [authenticate, courseValidation], (req,res) => { //201
   // Creates a course, sets the Location header to the URI for the course, and returns no content
-  const courseInfo = req.body; //Why is req.body undefined? Needed body-parser
-  console.log(courseInfo);
+  const courseInfo = {
+    title: req.body.title,
+    description: req.body.description,
+    estimatedTime: req.body.estimatedTime,
+    materialsNeeded: req.body.materialsNeeded
+  }; //Why is req.body undefined? Needed body-parser
+  const errors = validationResult(req);
+  // If there are validation errors... // Maybe write separate function?
+  if (!errors.isEmpty()) {
+    // Use the Array `map()` method to get a list of error messages.
+    const errorMessages = errors.array().map(error => error.msg);
 
-  setTimeout(function() {
-    const errors = validationResult(req);
-    // If there are validation errors... // Maybe write separate function?
-    if (!errors.isEmpty()) {
-      // Use the Array `map()` method to get a list of error messages.
-      const errorMessages = errors.array().map(error => error.msg);
-
-      // Return the validation errors to the client.
-      res.status(400).json({ errors: errorMessages });
-    } else {
-      courseInfo.userId = req.currentUser.id; // Why do I have access to req.currentUser? Because of authenticate.js
-      Course.create(courseInfo).then(course => {
-        console.log("Your course was successfully created");
-        res.location("/api/courses/:id").status(201).end();
-      }).catch(err => {
-        err.status = 400;
-        next(err);
-      })
-    }
-    }, 2000)
+    // Return the validation errors to the client.
+    res.status(400).json({ errors: errorMessages });
+  } else {
+    courseInfo.userId = req.currentUser.id; // Why do I have access to req.currentUser? Because of authenticate.js
+    Course.create(courseInfo).then(course => {
+      console.log("Your course was successfully created");
+      res.location("/api/courses/:id").status(201).end();
+    }).catch(err => {
+      err.status = 400;
+      next(err);
+    })
+  }
 });
 
-router.put("/:id", [authenticate, courseValidation], (req,res) => { 
+router.put("/:id", [authenticate, courseValidation], (req,res, next) => { 
   // Updates a course and returns no content
   const errors = validationResult(req);
   // If there are validation errors...
@@ -104,13 +106,19 @@ router.put("/:id", [authenticate, courseValidation], (req,res) => {
     // Return the validation errors to the client.
     res.status(400).json({ errors: errorMessages });
   } else {
-    const newInfo = req.body;
+    const newInfo = {
+    title: req.body.title,
+    description: req.body.description,
+    estimatedTime: req.body.estimatedTime,
+    materialsNeeded: req.body.materialsNeeded,
+    id: req.body.id
+  };
     Course.findOne({
       where: {
         id: newInfo.id
       }
     }).then(course => {
-      if(course.userId !== req.currentUser.id) {
+      if(req.body.userId !== req.currentUser.id) {
         const err = new Error('You are not allowed to edit this course');
         err.status = 403;
         next(err);
@@ -131,7 +139,7 @@ router.put("/:id", [authenticate, courseValidation], (req,res) => {
   }
 });
 
-router.delete("/:id", authenticate, (req,res) => { 
+router.delete("/:id", authenticate, (req,res,next) => { 
   //Deletes a course and returns no content
   Course.findByPk(req.params.id)
     .then(course => {

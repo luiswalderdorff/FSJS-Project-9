@@ -28,6 +28,7 @@ module.exports = (req, res, next) => { // Passing the authenticateUser() custom 
         if (authenticated) {
           // Then store the retrieved user object on the request object so any middleware functions that follow this middleware function will have access to the user's information.
           req.currentUser = user;
+          next();
         } else {
           // Wrong Password
           message = `Authentication failure for username: ${user.username}`;
@@ -48,9 +49,9 @@ module.exports = (req, res, next) => { // Passing the authenticateUser() custom 
 
     // Return a response with a 401 Unauthorized HTTP status code.
     res.status(401).json({ message: 'Access Denied' });
-  } else {
+  } /*else {
     // Or if user authentication succeeded...
     // Call the next() method.
     next();
-  }
+  }*/
 }
