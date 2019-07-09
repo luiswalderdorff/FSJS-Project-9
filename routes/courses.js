@@ -34,14 +34,14 @@ router.get("/", (req,res) => { //200
     },
     ],
   }).then(courses => {
-    res.json(courses).status(200);
+    res.json(courses).status(200).end();
   }).catch(err => {
     err.status = 400;
     next(err);
   });
 });
 
-router.get("/:id", (req,res) => { //200
+router.get("/:id", (req,res,next) => { //200
   // Returns a the course (including the user that owns the course) for the provided course ID
   const currentCourse = req.params;
   Course.findOne({
@@ -57,11 +57,10 @@ router.get("/:id", (req,res) => { //200
     }],
   }).then(course => {
     if (course) {
-      res.json(course).status(200);
+      res.json(course).status(200).end();
     } else {
       const err = new Error("This course does not exist");
-      res.json({message: "This course doesn't exist"});
-      err.status(400);
+      res.status(400).json({message: "This course doesn't exist"});
       next(err);
     }
   })
@@ -87,7 +86,7 @@ router.post("/", [authenticate, courseValidation], (req,res) => { //201
     courseInfo.userId = req.currentUser.id; // Why do I have access to req.currentUser? Because of authenticate.js
     Course.create(courseInfo).then(course => {
       console.log("Your course was successfully created");
-      res.location("/api/courses/:id").status(201).end();
+      res.location(`/api/courses/${courseInfo.id}`).status(201).end();
     }).catch(err => {
       err.status = 400;
       next(err);
