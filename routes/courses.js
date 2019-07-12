@@ -86,7 +86,8 @@ router.post("/", [authenticate, courseValidation], (req,res) => { //201
     courseInfo.userId = req.currentUser.id; // Why do I have access to req.currentUser? Because of authenticate.js
     Course.create(courseInfo).then(course => {
       console.log("Your course was successfully created");
-      res.location(`/api/courses/${courseInfo.id}`).status(201).end();
+      res.location(`/api/courses/${course.id}`).status(201).end();
+      console.log(course.id);
     }).catch(err => {
       err.status = 400;
       next(err);
@@ -110,21 +111,25 @@ router.put("/:id", [authenticate, courseValidation], (req,res, next) => {
     description: req.body.description,
     estimatedTime: req.body.estimatedTime,
     materialsNeeded: req.body.materialsNeeded,
-    id: req.body.id
+    id: req.body.id,
+    userId: req.body.userId
   };
     Course.findOne({
       where: {
         id: newInfo.id
       }
     }).then(course => {
-      if(req.body.userId !== req.currentUser.id) {
+      console.log("The UserId is: " + course.userId);
+      if(course.userId !== req.currentUser.id) {
         const err = new Error('You are not allowed to edit this course');
+        res.json({message: "You are not allowed to edit this course"});
         err.status = 403;
         next(err);
       } else if (course) {
         course.update(newInfo);
       } else {
         const err = new Error('This course does not exist');
+        res.json({message: "This course does not exist"});
         err.status = 403;
         next(err);
       }
